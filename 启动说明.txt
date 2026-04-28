@@ -1,0 +1,49 @@
+========================================
+  启动前必读 - 环境安装说明
+========================================
+
+⚠️ 您的系统需要先安装 Java 和 Maven
+
+📋 最简单的操作步骤：
+
+1️⃣ 下载并安装 Java JDK 17
+   👉 访问：https://adoptium.net/temurin/releases/?version=17
+   👉 下载 Windows x64 MSI 安装包
+   👉 双击安装，一路"下一步"
+
+2️⃣ 下载并配置 Maven
+   👉 访问：https://maven.apache.org/download.cgi  
+   👉 下载 apache-maven-3.9.x-bin.zip
+   👉 解压到 C:\Maven\apache-maven-3.9.x
+   👉 配置环境变量（见下方详细说明）
+
+3️⃣ 验证安装
+   打开新的CMD窗口，运行：
+   java -version
+   mvn -version
+   
+   如果都显示版本信息，说明成功！✅
+
+4️⃣ 启动项目
+   cd d:\aiwork\virtual-chat
+   start.bat
+
+5️⃣ 访问应用
+   浏览器打开：http://localhost:8080
+   登录：hibaobao / hibaobao
+
+
+📖 详细图文教程：
+   查看文件：超简单安装指南.md
+
+
+💡 重要提示：
+- 安装完成后必须关闭旧窗口，打开新窗口
+- 或者重启电脑让环境变量生效
+- API密钥已配置，可以直接使用AI功能
+
+
+❓ 需要帮助？
+   查看详细文档：STARTUP_GUIDE.md
+
+========================================
