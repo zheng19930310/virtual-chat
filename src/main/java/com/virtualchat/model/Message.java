@@ -36,6 +36,9 @@ public class Message {
     @Column(name = "context_id")
     private Long contextId; // 关联的对话上下文ID
     
+    @Column(name = "thinking_content", columnDefinition = "TEXT")
+    private String thinkingContent; // 思维链内容（COT/TOT模式）
+    
     @Column(name = "timestamp", nullable = false)
     private LocalDateTime timestamp;
     

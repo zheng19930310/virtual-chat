@@ -1,0 +1,41 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.iml
+
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!target/virtual-chat-0.0.1-SNAPSHOT.jar
+
+# Data
+data/
+*.db
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+*.docx
+*.txt
+
+# Scripts
+*.bat
+*.ps1
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated files
+generated-images/

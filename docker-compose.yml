@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  virtual-chat:
+    build:
+      context: .
+      dockerfile: Dockerfile.simple
+    container_name: virtual-chat-app
+    ports:
+      - "8080:8080"
+    volumes:
+      # 挂载数据目录以保持H2数据库持久化
+      - ./data:/app/data
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SERVER_PORT=8080
+    restart: unless-stopped

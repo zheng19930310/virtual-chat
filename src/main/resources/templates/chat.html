@@ -331,6 +331,170 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+        
+        /* 思维链展示区域样式 */
+        .thinking-container {
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: #f8f9fa;
+            overflow: hidden;
+        }
+        
+        .thinking-header {
+            padding: 10px 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+        }
+        
+        .thinking-header:hover {
+            opacity: 0.9;
+        }
+        
+        .thinking-header h6 {
+            margin: 0;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .thinking-toggle {
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+        
+        .thinking-toggle.collapsed {
+            transform: rotate(-90deg);
+        }
+        
+        .thinking-content {
+            max-height: 500px;
+            overflow-y: auto;
+            transition: max-height 0.3s ease-out;
+            padding: 15px;
+            background: white;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .thinking-content.collapsed {
+            max-height: 0;
+            padding: 0 15px;
+            overflow: hidden;
+        }
+        
+        .thinking-line {
+            margin: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .thinking-line::before {
+            content: '▸';
+            position: absolute;
+            left: 0;
+            color: #667eea;
+        }
+        
+        .answer-container {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border-left: 4px solid #07c160;
+        }
+        
+        .answer-label {
+            font-size: 12px;
+            color: #07c160;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .answer-content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        /* 流式输出光标动画 */
+        .streaming-cursor::after {
+            content: '▋';
+            animation: blink 1s infinite;
+            color: #667eea;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+        
+        /* Tooltip 样式 */
+        .tooltip-container {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+        }
+        
+        .tooltip-text {
+            visibility: hidden;
+            width: 280px;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px 12px;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -140px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            pointer-events: none;
+        }
+        
+        .tooltip-text::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: rgba(0, 0, 0, 0.9) transparent transparent transparent;
+        }
+        
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        
+        .tooltip-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #667eea;
+            font-size: 13px;
+        }
+        
+        .tooltip-content {
+            color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
@@ -508,10 +672,57 @@
                 <div class="chat-header">
                     <h4>${friend.name}</h4>
                     <div style="display: flex; align-items: center; gap: 15px;">
-                        <label style="color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="useContextSwitch" checked style="width: 16px; height: 16px; cursor: pointer;">
-                            <span>连续对话</span>
-                        </label>
+                        <div class="tooltip-container">
+                            <label style="color: white; font-size: 14px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="useContextSwitch" checked style="width: 16px; height: 16px; cursor: pointer;">
+                                <span>连续对话 <span style="font-size: 11px; opacity: 0.8; color: #e0e0e0;">(记住历史，连贯交流)</span></span>
+                            </label>
+                            <span class="tooltip-text">
+                                <div class="tooltip-title">📝 连续对话模式</div>
+                                <div class="tooltip-content">
+                                    开启后，AI会记住之前的对话历史，实现连贯的上下文交流。关闭后，每次对话都是独立的，不携带历史信息。
+                                </div>
+                            </span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 5px; color: white; font-size: 14px;">
+                            <span>思维链:</span>
+                            <div class="tooltip-container">
+                                <label style="cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                                    <input type="radio" name="thinkingChain" value="NORMAL" checked style="cursor: pointer;">
+                                    <span>常规 <span style="font-size: 11px; opacity: 0.8; color: #e0e0e0;">(直接回答)</span></span>
+                                </label>
+                                <span class="tooltip-text">
+                                    <div class="tooltip-title">💬 常规模式</div>
+                                    <div class="tooltip-content">
+                                        保持原有聊天效果，AI直接给出回答，不展示思考过程。响应速度最快，适合日常对话。
+                                    </div>
+                                </span>
+                            </div>
+                            <div class="tooltip-container">
+                                <label style="cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                                    <input type="radio" name="thinkingChain" value="COT" style="cursor: pointer;">
+                                    <span>COT <span style="font-size: 11px; opacity: 0.8; color: #e0e0e0;">(逐步推理)</span></span>
+                                </label>
+                                <span class="tooltip-text">
+                                    <div class="tooltip-title">🧠 COT (Chain of Thought)</div>
+                                    <div class="tooltip-content">
+                                        思维链模式。AI会逐步展示推理过程，像人类一样一步步思考。适合复杂问题和逻辑推理场景。
+                                    </div>
+                                </span>
+                            </div>
+                            <div class="tooltip-container">
+                                <label style="cursor: pointer; display: flex; align-items: center; gap: 3px;">
+                                    <input type="radio" name="thinkingChain" value="TOT" style="cursor: pointer;">
+                                    <span>TOT <span style="font-size: 11px; opacity: 0.8; color: #e0e0e0;">(多方案比较)</span></span>
+                                </label>
+                                <span class="tooltip-text">
+                                    <div class="tooltip-title">🌳 TOT (Tree of Thoughts)</div>
+                                    <div class="tooltip-content">
+                                        思维树模式。AI会探索多种可能的解决方案，比较后选择最佳答案。适合需要多角度思考的复杂问题。
+                                    </div>
+                                </span>
+                            </div>
+                        </div>
                         <button class="btn-edit-friend" onclick="toggleAvatar()" id="avatarToggleBtn" style="background: #667eea; color: white; border: none;">
                             <i class="bi bi-camera-video"></i> 数字人
                         </button>
@@ -575,6 +786,30 @@
                             }
                         });
                         contentHtml += '</div>';
+                    } else if (msg.messageType === 'file_analysis') {
+                        // 文件分析消息
+                        contentHtml = `
+                            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 12px;">
+                                <div style="font-size: 24px; margin-bottom: 10px;">📄</div>
+                                <div style="font-weight: bold; margin-bottom: 10px;">文件分析结果</div>
+                                <div style="background: rgba(255,255,255,0.95); color: #333; padding: 12px; border-radius: 8px; white-space: pre-wrap; word-wrap: break-word; line-height: 1.6;">${msg.content}</div>
+                            </div>
+                        `;
+                    } else if (msg.sender === 'friend' && msg.thinkingContent) {
+                        // 思维链模式的消息：显示思维链和最终回答
+                        contentHtml = `
+                            <div class="thinking-chain-container">
+                                <div class="thinking-header" onclick="toggleThinking(this)">
+                                    <i class="bi bi-lightbulb"></i> 思维链推理过程
+                                    <span class="thinking-toggle"><i class="bi bi-chevron-down"></i></span>
+                                </div>
+                                <div class="thinking-content collapsed">${msg.thinkingContent}</div>
+                            </div>
+                            <div class="answer-container">
+                                <div class="answer-label"><i class="bi bi-check-circle"></i> 最终回答</div>
+                                <div class="answer-content">${msg.content}</div>
+                            </div>
+                        `;
                     } else {
                         contentHtml = msg.content;
                     }
@@ -610,6 +845,33 @@
             const useContextSwitch = document.getElementById('useContextSwitch');
             const useContext = useContextSwitch ? useContextSwitch.checked : true;
             
+            // 获取思维链模式
+            const thinkingChainRadios = document.getElementsByName('thinkingChain');
+            let thinkingChainMode = 'NORMAL'; // 默认值为常规模式
+            for (const radio of thinkingChainRadios) {
+                if (radio.checked) {
+                    thinkingChainMode = radio.value;
+                    break;
+                }
+            }
+            
+            // 清空输入框
+            input.value = '';
+            
+            // 如果是思维链模式，使用流式输出
+            if (thinkingChainMode === 'COT' || thinkingChainMode === 'TOT') {
+                await sendMessageStreaming(content, useContext, thinkingChainMode);
+            } else {
+                // 常规模式使用原有方式
+                await sendMessageNormal(content, useContext);
+            }
+        }
+        
+        // 常规模式发送消息
+        async function sendMessageNormal(content, useContext) {
+            const sendBtn = document.querySelector('.btn-send');
+            const input = document.getElementById('messageInput');
+            
             try {
                 const response = await fetch('/api/messages', {
                     method: 'POST',
@@ -619,14 +881,12 @@
                     body: JSON.stringify({
                         friendId: currentFriendId,
                         content: content,
-                        useContext: useContext
+                        useContext: useContext,
+                        thinkingChainMode: 'NORMAL'
                     })
                 });
                 
                 const data = await response.json();
-                
-                // 清空输入框
-                input.value = '';
                 
                 // 重新加载消息
                 await loadMessages(currentFriendId);
@@ -642,6 +902,370 @@
                 sendBtn.disabled = false;
                 input.disabled = false;
                 input.focus();
+            }
+        }
+        
+        // 流式发送消息（支持思维链）
+        async function sendMessageStreaming(content, useContext, thinkingChainMode) {
+            console.log('=== 开始流式发送消息 ===');
+            console.log('思维链模式:', thinkingChainMode);
+            console.log('内容:', content);
+            
+            const sendBtn = document.querySelector('.btn-send');
+            const input = document.getElementById('messageInput');
+            const container = document.getElementById('messagesContainer');
+            
+            // 判断是否为思维链模式
+            const isThinkingMode = thinkingChainMode === 'COT' || thinkingChainMode === 'TOT';
+            
+            try {
+                // 创建流式消息元素
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'message friend';
+                
+                const time = new Date().toLocaleTimeString('zh-CN', { 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                });
+                
+                messageDiv.innerHTML = `
+                    <div style="max-width: 80%;">
+                        <div id="streamingMessage"></div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+                container.appendChild(messageDiv);
+                container.scrollTop = container.scrollHeight;
+                
+                const streamingDiv = document.getElementById('streamingMessage');
+                let foundSeparator = false;  // 标记是否找到分隔符
+                
+                console.log('正在请求流式 API...');
+                
+                // 使用 fetch 接收 SSE 数据
+                const response = await fetch('/api/messages/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        friendId: currentFriendId,
+                        content: content,
+                        useContext: useContext,
+                        thinkingChainMode: thinkingChainMode
+                    })
+                });
+                
+                console.log('API 响应状态:', response.status);
+                console.log('Content-Type:', response.headers.get('content-type'));
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let chunkCount = 0;
+                
+                // 思维链模式的状态跟踪
+                let isInThinking = false;
+                let isInAnswer = false;
+                let thinkingContent = '';
+                let answerContent = '';
+                let thinkingContainer = null;
+                let answerContainer = null;
+                
+                // 用于累积标记片段（处理标记被拆分的情况）
+                let markerBuffer = '';
+                const markers = ['<think>', '</think>', '<answer>', '</answer>'];
+                
+                // 创建思维链容器
+                if (isThinkingMode) {
+                    thinkingContainer = document.createElement('div');
+                    thinkingContainer.className = 'thinking-chain-container';
+                    thinkingContainer.innerHTML = `
+                        <div class="thinking-header" onclick="toggleThinking(this)">
+                            <i class="bi bi-lightbulb"></i> 思维链推理过程
+                            <span class="thinking-toggle"><i class="bi bi-chevron-down"></i></span>
+                        </div>
+                        <div class="thinking-content streaming-cursor"></div>
+                    `;
+                    streamingDiv.appendChild(thinkingContainer);
+                    isInThinking = true;
+                }
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        console.log('=== 流式读取完成 ===');
+                        console.log('总共接收块数:', chunkCount);
+                        console.log('思维内容长度:', thinkingContent.length);
+                        console.log('回答内容长度:', answerContent.length);
+                        
+                        // 处理结束逻辑
+                        if (isThinkingMode && isInThinking) {
+                            const contentDiv = thinkingContainer.querySelector('.thinking-content');
+                            contentDiv.classList.remove('streaming-cursor');
+                            setTimeout(() => {
+                                toggleThinking(thinkingContainer.querySelector('.thinking-header'));
+                            }, 1000);
+                        }
+                        
+                        if (isThinkingMode && isInAnswer) {
+                            const contentDiv = answerContainer.querySelector('.answer-content');
+                            contentDiv.classList.remove('streaming-cursor');
+                        }
+                        
+                        // 保存AI消息（只要有内容就保存）
+                        if (isThinkingMode && (thinkingContent || answerContent)) {
+                            console.log('=== 准备保存消息 ===');
+                            console.log('思维内容:', thinkingContent.substring(0, 50));
+                            console.log('回答内容:', answerContent.substring(0, 50));
+                            await saveAIMessage(answerContent || thinkingContent, thinkingContent);
+                        }
+                        
+                        sendBtn.disabled = false;
+                        input.disabled = false;
+                        input.focus();
+                        break;
+                    }
+                    
+                    chunkCount++;
+                    const text = decoder.decode(value, { stream: true });
+                    console.log('收到原始数据块:', text.substring(0, 100));
+                    
+                    buffer += text;
+                    const lines = buffer.split('\n\n');
+                    buffer = lines.pop();
+                    
+                    console.log('解析后的行数:', lines.length);
+                    
+                    for (const line of lines) {
+                        console.log('处理行:', line.substring(0, 80));
+                        
+                        // 兼容两种 SSE 格式：'data: ' 和 'data:'
+                        let data = null;
+                        if (line.startsWith('data: ')) {
+                            data = line.substring(6);
+                        } else if (line.startsWith('data:')) {
+                            data = line.substring(5);
+                        }
+                        
+                        if (data !== null && data !== '') {
+                            console.log('提取的数据:', data.substring(0, 50));
+                            
+                            // 对于思维链模式，需要处理标记可能被拆分的情况
+                            if (isThinkingMode) {
+                                // 累积数据到 markerBuffer
+                                markerBuffer += data;
+                                
+                                // 检查是否包含完整标记
+                                let foundCompleteMarker = false;
+                                for (const marker of markers) {
+                                    if (markerBuffer.includes(marker)) {
+                                        foundCompleteMarker = true;
+                                        console.log('>>> 检测到完整标记:', marker);
+                                        
+                                        // 提取标记前的内容
+                                        const markerIndex = markerBuffer.indexOf(marker);
+                                        const beforeMarker = markerBuffer.substring(0, markerIndex).trim();
+                                        
+                                        // 处理标记
+                                        if (marker === '<think>') {
+                                            console.log('>>> 收到 THINKING_START 标记');
+                                            isInThinking = true;
+                                            isInAnswer = false;
+                                            if (beforeMarker) {
+                                                // 清理data:前缀（支持多行）并过滤空白行
+                                                const cleaned = beforeMarker
+                                                    .replace(/^data:\s*/gm, '')
+                                                    .split('\n')
+                                                    .filter(line => line.trim() !== '')
+                                                    .join('\n');
+                                                if (cleaned) {
+                                                    thinkingContent += cleaned;
+                                                }
+                                            }
+                                        } else if (marker === '</think>') {
+                                            console.log('>>> 收到 THINKING_END 标记');
+                                            isInThinking = false;
+                                            if (beforeMarker) {
+                                                // 清理data:前缀（支持多行）并过滤空白行
+                                                const cleaned = beforeMarker
+                                                    .replace(/^data:\s*/gm, '')
+                                                    .split('\n')
+                                                    .filter(line => line.trim() !== '')
+                                                    .join('\n');
+                                                if (cleaned) {
+                                                    thinkingContent += cleaned;
+                                                }
+                                            }
+                                            const contentDiv = thinkingContainer.querySelector('.thinking-content');
+                                            contentDiv.classList.remove('streaming-cursor');
+                                            setTimeout(() => {
+                                                toggleThinking(thinkingContainer.querySelector('.thinking-header'));
+                                            }, 500);
+                                        } else if (marker === '<answer>') {
+                                            console.log('>>> 收到 ANSWER_START 标记');
+                                            isInThinking = false;
+                                            isInAnswer = true;
+                                            answerContainer = document.createElement('div');
+                                            answerContainer.className = 'answer-container';
+                                            answerContainer.innerHTML = `
+                                                <div class="answer-label"><i class="bi bi-check-circle"></i> 最终回答</div>
+                                                <div class="answer-content streaming-cursor"></div>
+                                            `;
+                                            streamingDiv.appendChild(answerContainer);
+                                            if (beforeMarker) {
+                                                // 清理data:前缀（支持多行）并过滤空白行
+                                                const cleaned = beforeMarker
+                                                    .replace(/^data:\s*/gm, '')
+                                                    .split('\n')
+                                                    .filter(line => line.trim() !== '')
+                                                    .join('\n');
+                                                if (cleaned) {
+                                                    answerContent += cleaned;
+                                                }
+                                            }
+                                        } else if (marker === '</answer>') {
+                                            console.log('>>> 收到 ANSWER_END 标记');
+                                            isInAnswer = false;
+                                            if (beforeMarker) {
+                                                // 清理data:前缀（支持多行）并过滤空白行
+                                                const cleaned = beforeMarker
+                                                    .replace(/^data:\s*/gm, '')
+                                                    .split('\n')
+                                                    .filter(line => line.trim() !== '')
+                                                    .join('\n');
+                                                if (cleaned) {
+                                                    answerContent += cleaned;
+                                                }
+                                            }
+                                            const contentDiv = answerContainer.querySelector('.answer-content');
+                                            contentDiv.classList.remove('streaming-cursor');
+                                        }
+                                        
+                                        // 清除已处理的标记部分
+                                        markerBuffer = markerBuffer.substring(markerIndex + marker.length);
+                                        
+                                        // 更新显示
+                                        if (isInThinking && thinkingContainer) {
+                                            const contentDiv = thinkingContainer.querySelector('.thinking-content');
+                                            contentDiv.textContent = thinkingContent;
+                                            container.scrollTop = container.scrollHeight;
+                                        } else if (isInAnswer && answerContainer) {
+                                            const contentDiv = answerContainer.querySelector('.answer-content');
+                                            contentDiv.textContent = answerContent;
+                                            container.scrollTop = container.scrollHeight;
+                                        }
+                                        
+                                        break;
+                                    }
+                                }
+                                
+                                // 如果没有找到完整标记，检查是否有普通内容需要显示
+                                if (!foundCompleteMarker) {
+                                    // 检查是否可能包含标记的开头
+                                    let hasMarkerPrefix = false;
+                                    for (const marker of markers) {
+                                        for (let i = 1; i < marker.length; i++) {
+                                            if (markerBuffer.endsWith(marker.substring(0, i))) {
+                                                hasMarkerPrefix = true;
+                                                break;
+                                            }
+                                        }
+                                        if (hasMarkerPrefix) break;
+                                    }
+                                    
+                                    // 如果没有标记前缀，说明是普通内容
+                                    if (!hasMarkerPrefix && markerBuffer.length > 0) {
+                                        // 清理data:前缀（支持多行）并过滤空白行
+                                        let cleanBuffer = markerBuffer
+                                            .replace(/^data:\s*/gm, '')
+                                            .split('\n')
+                                            .filter(line => line.trim() !== '')
+                                            .join('\n');
+                                        
+                                        if (cleanBuffer) {
+                                            if (isInThinking && thinkingContainer) {
+                                                console.log('>>> 追加思维内容:', cleanBuffer.substring(0, 30));
+                                                thinkingContent += cleanBuffer;
+                                                const contentDiv = thinkingContainer.querySelector('.thinking-content');
+                                                contentDiv.textContent = thinkingContent;
+                                                container.scrollTop = container.scrollHeight;
+                                            } else if (isInAnswer && answerContainer) {
+                                                console.log('>>> 追加回答内容:', cleanBuffer.substring(0, 30));
+                                                answerContent += cleanBuffer;
+                                                const contentDiv = answerContainer.querySelector('.answer-content');
+                                                contentDiv.textContent = answerContent;
+                                                container.scrollTop = container.scrollHeight;
+                                            } else if (!isInThinking && !isInAnswer && thinkingContainer) {
+                                                console.log('>>> 默认追加到思维内容:', cleanBuffer.substring(0, 30));
+                                                thinkingContent += cleanBuffer;
+                                                const contentDiv = thinkingContainer.querySelector('.thinking-content');
+                                                contentDiv.textContent = thinkingContent;
+                                                container.scrollTop = container.scrollHeight;
+                                            }
+                                        }
+                                        markerBuffer = '';
+                                    }
+                                }
+                            } else {
+                                // 常规模式：直接显示内容
+                                console.log('>>> 常规模式显示:', data.substring(0, 50));
+                            }
+                        }
+                    }
+                }
+                
+            } catch (error) {
+                console.error('流式发送消息失败:', error);
+                console.error('错误堆栈:', error.stack);
+                alert('发送失败，请重试');
+                sendBtn.disabled = false;
+                input.disabled = false;
+                input.focus();
+            }
+        }
+        
+        // 切换思维链展开/折叠
+        function toggleThinking(header) {
+            const container = header.parentElement;
+            const content = container.querySelector('.thinking-content');
+            const toggle = header.querySelector('.thinking-toggle');
+            
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                toggle.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                toggle.classList.add('collapsed');
+            }
+        }
+        
+        // 保存AI消息到数据库（直接保存，不重新生成）
+        async function saveAIMessage(content, thinkingContent = null) {
+            try {
+                const requestBody = {
+                    friendId: currentFriendId,
+                    content: content
+                };
+                
+                // 如果有思维链内容，添加到请求中
+                if (thinkingContent) {
+                    requestBody.thinkingContent = thinkingContent;
+                }
+                
+                await fetch('/api/messages/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+            } catch (error) {
+                console.error('保存AI消息失败:', error);
             }
         }
         

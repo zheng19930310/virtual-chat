@@ -9,6 +9,7 @@ import com.virtualchat.repository.ConversationRepository;
 import com.virtualchat.repository.FriendRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class ChatService {
+public class StreamingChatService {
 
     @Autowired
     private DashScopeChatModel chatModel;
@@ -30,14 +31,14 @@ public class ChatService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
-     * 获取AI回复（支持连续对话和思维链模式）
+     * 流式获取AI回复（支持思维链模式）
      */
-    public String getAIResponse(Long friendId, String userMessage, boolean useContext, String thinkingChainMode) {
+    public Flux<String> getStreamingAIResponse(Long friendId, String userMessage, boolean useContext, String thinkingChainMode) {
         // 获取好友信息
         Friend friend = friendRepository.findById(friendId)
             .orElseThrow(() -> new RuntimeException("好友不存在"));
         
-        // 构建系统提示词，包含好友的性格和特征
+        // 构建系统提示词
         String systemPrompt = String.format(
             "你是一个虚拟朋友，名叫%s，%d岁，性别%s。" +
             "你的性格特点：%s。" +
@@ -54,35 +55,58 @@ public class ChatService {
         String fullPrompt;
         
         if (useContext) {
-            // 连续对话模式：携带上下文
             fullPrompt = buildContextualPrompt(friendId, systemPrompt, userMessage);
         } else {
-            // 单条交流模式：不携带上下文
             fullPrompt = systemPrompt + "\n用户: " + userMessage;
         }
         
         // 根据思维链模式添加相应的指令
+        boolean isThinkingMode = "COT".equals(thinkingChainMode) || "TOT".equals(thinkingChainMode);
         if ("COT".equals(thinkingChainMode)) {
-            fullPrompt += "\n\n请使用思维链(CoT)方式逐步思考并给出答案。";
+            fullPrompt += "\n\n【重要】请严格按照以下格式输出（使用XML标签）：\n" +
+                         "1. 首先输出 <think>\n" +
+                         "2. 然后展示你的逐步思考过程（思维链）\n" +
+                         "3. 输出 </think>\n" +
+                         "4. 输出 <answer>\n" +
+                         "5. 给出简洁的最终回答\n" +
+                         "6. 输出 </answer>\n" +
+                         "\n示例：\n" +
+                         "<think>\n" +
+                         "让我来分析这个问题...首先...其次...\n" +
+                         "</think>\n" +
+                         "<answer>\n" +
+                         "这是最终答案。\n" +
+                         "</answer>";
         } else if ("TOT".equals(thinkingChainMode)) {
-            fullPrompt += "\n\n请使用思维树(ToT)方式探索多种可能的解决方案并选择最佳答案。";
+            fullPrompt += "\n\n【重要】请严格按照以下格式输出（使用XML标签）：\n" +
+                         "1. 首先输出 <think>\n" +
+                         "2. 然后展示你的多种思路和方案比较（思维树）\n" +
+                         "3. 输出 </think>\n" +
+                         "4. 输出 <answer>\n" +
+                         "5. 给出最佳方案的简洁回答\n" +
+                         "6. 输出 </answer>\n" +
+                         "\n示例：\n" +
+                         "<think>\n" +
+                         "方案A:... 方案B:... 方案C:... 经过比较，方案B最优...\n" +
+                         "</think>\n" +
+                         "<answer>\n" +
+                         "基于方案B的最终答案。\n" +
+                         "</answer>";
         }
-        // 如果是NORMAL模式，不添加任何额外提示，保持原有聊天效果
         
-        // 调用千问大模型生成回复
-        try {
-            String response = chatModel.call(fullPrompt);
-            
-            // 如果是连续对话模式，保存对话到上下文
-            if (useContext) {
-                saveToContext(friendId, userMessage, response);
-            }
-            
-            return response;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return "抱歉，我现在有点忙，稍后再聊吧~";
+        // 如果是思维链模式，添加标记到 prompt 中，让 AI 输出格式化的内容
+        if (isThinkingMode) {
+            System.out.println("[流式聊天] 思维链模式: " + thinkingChainMode);
+        } else {
+            System.out.println("[流式聊天] 常规模式");
         }
+        
+        // 直接流式输出 AI 响应（思维链模式下 AI 会按 prompt 要求输出标记）
+        System.out.println("[流式聊天] 准备发送Prompt，长度: " + fullPrompt.length());
+        
+        return chatModel.stream(fullPrompt)
+            .doOnNext(text -> System.out.println("[流式聊天] AI输出chunk: " + text.substring(0, Math.min(50, text.length()))))
+            .filter(t -> t != null && !t.trim().isEmpty());
     }
     
     /**
@@ -92,7 +116,6 @@ public class ChatService {
         StringBuilder prompt = new StringBuilder(systemPrompt);
         prompt.append("\n\n以下是之前的对话历史：\n");
         
-        // 获取对话上下文
         Conversation conversation = conversationRepository.findByFriendId(friendId).orElse(null);
         
         if (conversation != null && conversation.getContextData() != null) {
@@ -102,7 +125,6 @@ public class ChatService {
                     new TypeReference<List<Map<String, String>>>() {}
                 );
                 
-                // 只取最近5轮对话
                 int start = Math.max(0, history.size() - 5);
                 for (int i = start; i < history.size(); i++) {
                     Map<String, String> msg = history.get(i);
@@ -115,56 +137,5 @@ public class ChatService {
         
         prompt.append("\n用户: ").append(userMessage);
         return prompt.toString();
-    }
-    
-    /**
-     * 保存对话到上下文
-     */
-    private void saveToContext(Long friendId, String userMessage, String aiResponse) {
-        try {
-            Conversation conversation = conversationRepository.findByFriendId(friendId).orElse(null);
-            
-            List<Map<String, String>> history;
-            
-            if (conversation == null) {
-                history = new ArrayList<>();
-                conversation = new Conversation();
-                conversation.setFriendId(friendId);
-                conversation.setIsActive(true);
-            } else {
-                // 解析现有历史
-                if (conversation.getContextData() != null) {
-                    history = objectMapper.readValue(
-                        conversation.getContextData(), 
-                        new TypeReference<List<Map<String, String>>>() {}
-                    );
-                } else {
-                    history = new ArrayList<>();
-                }
-            }
-            
-            // 添加新对话
-            Map<String, String> userMsg = new HashMap<>();
-            userMsg.put("role", "用户");
-            userMsg.put("content", userMessage);
-            history.add(userMsg);
-            
-            Map<String, String> aiMsg = new HashMap<>();
-            aiMsg.put("role", "助手");
-            aiMsg.put("content", aiResponse);
-            history.add(aiMsg);
-            
-            // 保持最多10轮对话（20条消息）
-            if (history.size() > 20) {
-                history = history.subList(history.size() - 20, history.size());
-            }
-            
-            // 保存
-            conversation.setContextData(objectMapper.writeValueAsString(history));
-            conversationRepository.save(conversation);
-            
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 }
